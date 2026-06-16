@@ -45,14 +45,14 @@ public static class LessonTests
         await Task.Delay(80);
 
         tests.Add(!task.IsCompleted
-            ? Check.Pass("Регистрация ожидает результат отправки письма")
-            : Check.Fail("Регистрация ожидает результат отправки письма", "RegisterAsync завершился, пока SendConfirmationAsync еще не завершился."));
+            ? Check.Pass("Registration waits for the email send result")
+            : Check.Fail("Registration waits for the email send result", "RegisterAsync completed before SendConfirmationAsync finished."));
 
         email.Blocker.SetResult();
         await task.WaitAsync(TimeSpan.FromSeconds(2));
         tests.Add(email.Calls == 1 && db.Users.Count == 1 && db.EmailTokens.Count == 1
-            ? Check.Pass("Пользователь, токен и письмо проходят один согласованный сценарий")
-            : Check.Fail("Пользователь, токен и письмо проходят один согласованный сценарий", "Проверь сохранение пользователя/токена и вызов письма."));
+            ? Check.Pass("User, token, and email follow one consistent flow")
+            : Check.Fail("User, token, and email follow one consistent flow", "Check user/token persistence and the email call."));
         return tests;
     }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { checkSolution, fetchLesson, type CheckResponse, type Lesson } from "../data/mockLessons";
+import { useI18n } from "../i18n/LanguageContext";
 
 export function TaskPage() {
   const { id } = useParams();
@@ -10,6 +11,7 @@ export function TaskPage() {
   const [code, setCode] = useState("");
   const [checkResult, setCheckResult] = useState<CheckResponse | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const { language, t } = useI18n();
 
   useEffect(() => {
     if (!id) {
@@ -18,12 +20,12 @@ export function TaskPage() {
 
     setLesson(null);
     setLoadError("");
-    fetchLesson(id)
+    fetchLesson(id, language)
       .then(setLesson)
       .catch((requestError) => {
-        setLoadError(requestError instanceof Error ? requestError.message : "Backend недоступен");
+        setLoadError(requestError instanceof Error ? requestError.message : t("backendUnavailable"));
       });
-  }, [id]);
+  }, [id, language, t]);
 
   useEffect(() => {
     if (!lesson) {
@@ -43,10 +45,10 @@ export function TaskPage() {
   if (loadError) {
     return (
       <section className="placeholder-page">
-        <h1>Задание не найдено</h1>
+        <h1>{t("taskNotFound")}</h1>
         <p>{loadError}</p>
         <Link className="primary-button" to="/lessons">
-          К каталогу
+          {t("toCatalog")}
         </Link>
       </section>
     );
@@ -55,8 +57,8 @@ export function TaskPage() {
   if (!lesson) {
     return (
       <section className="placeholder-page">
-        <h1>Загружаем задание</h1>
-        <p>Запрашиваем сценарий с backend API.</p>
+        <h1>{t("loadingTask")}</h1>
+        <p>{t("requestScenario")}</p>
       </section>
     );
   }
@@ -70,7 +72,7 @@ export function TaskPage() {
     setCheckResult(null);
 
     try {
-      const submission = await checkSolution(lesson.id, code);
+      const submission = await checkSolution(lesson.id, code, language);
       setCheckResult(submission.result);
     } catch (error) {
       setCheckResult({
@@ -78,9 +80,9 @@ export function TaskPage() {
         total: 1,
         tests: [
           {
-            name: "Запуск проверки",
+            name: t("checkExecution"),
             passed: false,
-            message: error instanceof Error ? error.message : "Не удалось запустить проверку.",
+            message: error instanceof Error ? error.message : t("couldNotStartCheck"),
           },
         ],
       });
@@ -104,7 +106,7 @@ export function TaskPage() {
           <p>{lesson.goal}</p>
         </div>
         <Link className="primary-button" to="/lessons">
-          Все задания
+          {t("allTasks")}
         </Link>
       </div>
 
@@ -113,14 +115,14 @@ export function TaskPage() {
           <span className="task-file-name">{lesson.fileName}</span>
           <p>{lesson.description}</p>
 
-          <h2>Что исправить</h2>
+          <h2>{t("whatToFix")}</h2>
           <ul>
             {lesson.tasks.map((task) => (
               <li key={task}>{task}</li>
             ))}
           </ul>
 
-          <h2>Подсказки</h2>
+          <h2>{t("hints")}</h2>
           <ol>
             {lesson.hints.map((hint) => (
               <li key={hint}>{hint}</li>
@@ -130,19 +132,19 @@ export function TaskPage() {
 
         <div className="task-workbench">
           <div className="task-workbench__toolbar">
-            <span>Редактор решения</span>
+            <span>{t("solutionEditor")}</span>
             <div>
               <button type="button" onClick={() => setCode(lesson.starterCode)}>
-                Сбросить
+                {t("reset")}
               </button>
               <button type="button" onClick={runCheck} disabled={isChecking}>
-                {isChecking ? "Проверяем..." : "Запустить тесты"}
+                {isChecking ? t("checking") : t("runTests")}
               </button>
             </div>
           </div>
           <textarea
             className="task-code-editor"
-            aria-label={`Редактор файла ${lesson.fileName}`}
+            aria-label={`${t("fileEditor")} ${lesson.fileName}`}
             spellCheck={false}
             value={code}
             onChange={(event) => setCode(event.target.value)}
@@ -151,7 +153,7 @@ export function TaskPage() {
           {checkResult && (
             <section className={`check-panel ${allPassed ? "check-panel--passed" : "check-panel--failed"}`}>
               <div className="check-panel__summary">
-                <h2>{allPassed ? "Решение прошло проверку" : "Есть падающие тесты"}</h2>
+                <h2>{allPassed ? t("solutionPassed") : t("someTestsFailing")}</h2>
                 <span>
                   {checkResult.passed}/{checkResult.total}
                 </span>

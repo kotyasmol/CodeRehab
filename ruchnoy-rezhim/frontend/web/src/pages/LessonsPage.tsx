@@ -1,28 +1,27 @@
 import { useEffect, useState } from "react";
 import { LessonCard } from "../components/LessonCard";
 import { fetchLessons, type Lesson } from "../data/mockLessons";
+import { useI18n } from "../i18n/LanguageContext";
 
 export function LessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [error, setError] = useState("");
+  const { language, t } = useI18n();
 
   useEffect(() => {
-    fetchLessons()
+    fetchLessons(language)
       .then(setLessons)
       .catch((requestError) => {
-        setError(requestError instanceof Error ? requestError.message : "Backend недоступен");
+        setError(requestError instanceof Error ? requestError.message : t("backendUnavailable"));
       });
-  }, []);
+  }, [language, t]);
 
   return (
     <section className="placeholder-page lesson-catalog-page">
       <div className="section-heading">
         <div>
-          <h1>Асинхронный backend</h1>
-          <p>
-            Десять задач из обычной рабочей жизни: один файл, одна проблема,
-            ручное исправление без игрушечных алгоритмов.
-          </p>
+          <h1>{t("catalogTitle")}</h1>
+          <p>{t("catalogIntro")}</p>
         </div>
       </div>
       {error && <p className="backend-error">{error}</p>}

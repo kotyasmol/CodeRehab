@@ -1,5 +1,5 @@
 # Shared Contracts
 
-Здесь позже будут DTO и event contracts: `SubmissionCreated`, `SubmissionChecked`, `ProgressUpdated`, `AchievementUnlocked`.
+This folder is reserved for DTOs and event contracts such as `SubmissionCreated`, `SubmissionChecked`, `ProgressUpdated`, and `AchievementUnlocked`.
 
-На первом этапе контракты не добавляются, чтобы не раздувать backend.
+Contracts are not added in the first phase to keep the backend small.

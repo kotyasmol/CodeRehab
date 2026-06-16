@@ -33,21 +33,21 @@ export type SubmissionResponse = {
   result: CheckResponse;
 };
 
-export async function fetchLessons() {
-  const response = await fetch("/api/lessons");
+export async function fetchLessons(language = "en") {
+  const response = await fetch(`/api/lessons?lang=${encodeURIComponent(language)}`);
   return parseJson<Lesson[]>(response);
 }
 
-export async function fetchLesson(id: string) {
-  const response = await fetch(`/api/lessons/${id}`);
+export async function fetchLesson(id: string, language = "en") {
+  const response = await fetch(`/api/lessons/${id}?lang=${encodeURIComponent(language)}`);
   return parseJson<Lesson>(response);
 }
 
-export async function checkSolution(lessonId: string, code: string) {
+export async function checkSolution(lessonId: string, code: string, uiLanguage = "en") {
   const response = await fetch("/api/submissions/check", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lessonId, code }),
+    body: JSON.stringify({ lessonId, code, uiLanguage }),
   });
 
   return parseJson<SubmissionResponse>(response);

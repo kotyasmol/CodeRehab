@@ -39,16 +39,16 @@ public static class LessonTests
         IReadOnlyList<ShippingQuote>? quotes = null;
 
         try { quotes = await service.GetQuotesAsync(new ShipmentRequest("A", "B", 1), CancellationToken.None); }
-        catch (Exception ex) { tests.Add(Check.Fail("Падение одного провайдера не ломает весь ответ", ex.GetType().Name + ": " + ex.Message)); }
+        catch (Exception ex) { tests.Add(Check.Fail("One provider failure does not break the whole response", ex.GetType().Name + ": " + ex.Message)); }
 
         if (quotes is not null)
         {
             tests.Add(quotes.Any(x => x.Provider == "fast")
-                ? Check.Pass("Успешные тарифы возвращаются")
-                : Check.Fail("Успешные тарифы возвращаются", "Ответ не содержит тариф от fast-провайдера."));
+                ? Check.Pass("Successful quotes are returned")
+                : Check.Fail("Successful quotes are returned", "The response does not include the fast provider quote."));
             tests.Add(sw.ElapsedMilliseconds < 1200
-                ? Check.Pass("Медленный провайдер ограничен дедлайном")
-                : Check.Fail("Медленный провайдер ограничен дедлайном", "Проверка заняла " + sw.ElapsedMilliseconds + "ms."));
+                ? Check.Pass("Slow provider is limited by the deadline")
+                : Check.Fail("Slow provider is limited by the deadline", "The check took " + sw.ElapsedMilliseconds + "ms."));
         }
 
         return tests;

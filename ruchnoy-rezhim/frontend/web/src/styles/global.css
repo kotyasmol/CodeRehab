@@ -8,6 +8,7 @@ html {
   min-width: 320px;
   background: var(--color-pink);
   overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -60,15 +61,23 @@ main {
   border-radius: 999px;
   box-shadow: var(--shadow-small);
   max-width: 100%;
+  min-width: 0;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
   font-size: clamp(1rem, 2vw, 1.4rem);
   font-weight: 900;
   white-space: nowrap;
+}
+
+.brand > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brand-mark {
@@ -89,6 +98,7 @@ main {
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .main-nav a {
@@ -97,12 +107,45 @@ main {
   border-radius: 999px;
   font-weight: 900;
   font-size: 0.95rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .main-nav a:hover,
 .main-nav a.active {
   background: var(--color-olive);
   border-color: var(--color-black);
+}
+
+.language-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 2px solid var(--color-black);
+  border-radius: 999px;
+  background: var(--color-white);
+}
+
+.language-toggle__button {
+  cursor: pointer;
+  padding: 9px 11px;
+  border: 0;
+  background: transparent;
+  color: var(--color-black);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 1000;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.language-toggle__button + .language-toggle__button {
+  border-left: 2px solid var(--color-black);
+}
+
+.language-toggle__button--active {
+  background: var(--color-black);
+  color: var(--color-cream);
 }
 
 .hero-section {
@@ -134,6 +177,7 @@ main {
   font-size: clamp(3rem, 8vw, 7.1rem);
   line-height: 0.9;
   font-weight: 1000;
+  overflow-wrap: anywhere;
 }
 
 .hero-copy p {
@@ -156,6 +200,9 @@ main {
   box-shadow: var(--shadow-small);
   font-size: 1.08rem;
   font-weight: 1000;
+  line-height: 1.1;
+  text-align: center;
+  overflow-wrap: anywhere;
   transition:
     transform 160ms ease,
     box-shadow 160ms ease;
@@ -208,6 +255,7 @@ main {
   font-size: clamp(0.9rem, 1.4vw, 1.1rem);
   line-height: 1.75;
   white-space: pre;
+  overscroll-behavior: contain;
 }
 
 .code-preview span:nth-child(1),
@@ -281,6 +329,7 @@ main {
   font-size: clamp(2rem, 5vw, 4.2rem);
   line-height: 0.95;
   font-weight: 1000;
+  overflow-wrap: anywhere;
 }
 
 .section-heading p,
@@ -343,6 +392,8 @@ main {
   font-size: clamp(1.7rem, 3vw, 2.65rem);
   line-height: 0.95;
   font-weight: 1000;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .lesson-card p {
@@ -350,12 +401,14 @@ main {
   font-size: 1rem;
   line-height: 1.38;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .lesson-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: auto;
   padding-top: 18px;
@@ -368,6 +421,8 @@ main {
   border-radius: 999px;
   font-size: 0.92rem;
   font-weight: 1000;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .code-lab-section {
@@ -535,6 +590,14 @@ main {
   border-bottom: 0;
   border-radius: var(--radius-medium) var(--radius-medium) 0 0;
   font-weight: 1000;
+  min-width: 0;
+}
+
+.task-workbench__toolbar > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .task-workbench__toolbar div {
@@ -553,6 +616,8 @@ main {
   border-radius: 999px;
   font: inherit;
   font-size: 0.86rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .task-workbench__toolbar button:first-child {
@@ -581,6 +646,7 @@ main {
   font-size: 0.9rem;
   line-height: 1.55;
   white-space: pre;
+  tab-size: 2;
 }
 
 .task-code-editor {
@@ -616,6 +682,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 14px;
 }
 
@@ -633,6 +700,7 @@ main {
   color: var(--color-cream);
   border-radius: 999px;
   font-weight: 1000;
+  line-height: 1;
 }
 
 .check-panel ul {
@@ -688,10 +756,12 @@ main {
     align-items: flex-start;
     border-radius: var(--radius-medium);
     flex-direction: column;
+    gap: 12px;
   }
 
   .main-nav {
     justify-content: flex-start;
+    width: 100%;
   }
 
   .hero-section,
@@ -731,21 +801,68 @@ main {
   .app-shell {
     width: 100%;
     max-width: 100vw;
-    padding: 10px 16px 48px;
+    padding: 10px 14px 40px;
+  }
+
+  .site-header {
+    top: 8px;
+    gap: 10px;
+    padding: 12px;
+    border-width: 3px;
+    box-shadow: 4px 4px 0 var(--color-black);
+  }
+
+  .brand {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+  }
+
+  .main-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .main-nav a {
+    display: grid;
+    min-height: 34px;
+    place-items: center;
+    padding: 8px 7px;
+    overflow: hidden;
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
   }
 
   .hero-section,
   .lessons-preview,
   .code-lab-section,
   .placeholder-page {
-    padding: 18px;
+    padding: 16px;
     border-width: 3px;
     box-shadow: 5px 5px 0 var(--color-black);
   }
 
-  .main-nav a {
-    padding: 8px 10px;
-    font-size: 0.86rem;
+  .language-toggle {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .language-toggle__button {
+    flex: 1 1 0;
+    padding: 8px 9px;
+    font-size: 0.78rem;
+  }
+
+  .hero-section {
+    gap: 18px;
+    margin-top: 24px;
   }
 
   .hero-copy {
@@ -760,6 +877,17 @@ main {
     font-size: 1.08rem;
   }
 
+  .hero-board,
+  .code-lab-section .code-preview {
+    border-width: 3px;
+  }
+
+  .board-tabs {
+    gap: 8px;
+    padding: 12px;
+    font-size: 0.86rem;
+  }
+
   .primary-button {
     width: 100%;
     max-width: 100%;
@@ -767,6 +895,126 @@ main {
   }
 
   .code-preview {
+    min-height: 190px;
+    padding: 16px;
     font-size: 0.78rem;
+    line-height: 1.58;
+  }
+
+  .section-heading h2,
+  .code-lab-section h2,
+  .placeholder-page h1 {
+    font-size: clamp(2rem, 13vw, 3rem);
+  }
+
+  .section-heading p,
+  .code-lab-section p,
+  .placeholder-page p {
+    font-size: 1rem;
+  }
+
+  .lesson-card {
+    min-height: 0;
+    padding: 16px;
+    border-width: 3px;
+  }
+
+  .lesson-card h3 {
+    margin-top: 18px;
+    font-size: clamp(1.65rem, 11vw, 2.35rem);
+  }
+
+  .lesson-card__footer {
+    align-items: stretch;
+  }
+
+  .lesson-card__footer span,
+  .lesson-card__footer a {
+    display: grid;
+    min-height: 34px;
+    place-items: center;
+  }
+
+  .lesson-card__footer a {
+    flex: 1 1 110px;
+  }
+
+  .topic-ticker {
+    margin: 22px 0;
+  }
+
+  .task-page__intro .primary-button {
+    margin-top: 16px;
+  }
+
+  .task-layout {
+    gap: 16px;
+    margin-top: 22px;
+  }
+
+  .task-brief {
+    padding: 16px;
+    border-width: 3px;
+  }
+
+  .task-workbench__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 12px;
+    border-width: 3px;
+  }
+
+  .task-workbench__toolbar > span {
+    white-space: normal;
+  }
+
+  .task-workbench__toolbar div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .task-workbench__toolbar button {
+    min-height: 38px;
+    padding: 9px;
+  }
+
+  .task-code,
+  .task-code-editor {
+    min-height: 430px;
+    max-height: 62vh;
+    padding: 16px;
+    border-width: 3px;
+    font-size: 0.78rem;
+    line-height: 1.48;
+  }
+
+  .check-panel {
+    padding: 16px;
+    border-width: 3px;
+  }
+
+  .check-panel__summary h2 {
+    font-size: 1.55rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-shell {
+    padding-inline: 10px;
+  }
+
+  .language-toggle {
+    grid-column: 1 / -1;
+  }
+
+  .hero-section,
+  .lessons-preview,
+  .code-lab-section,
+  .placeholder-page {
+    padding: 14px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(2.3rem, 15vw, 3.6rem);
   }
 }

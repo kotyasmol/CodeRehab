@@ -8,6 +8,8 @@ public sealed class RunnerRequest
 
     public string Language { get; init; } = "csharp";
 
+    public string Locale { get; init; } = "en";
+
     public string UserCode { get; init; } = "";
 
     public int TimeoutMs { get; init; } = 12_000;
@@ -18,4 +20,10 @@ public sealed class RunnerRequest
 
     [JsonIgnore]
     public int EffectiveTimeoutMs => TimeoutMs > 0 ? TimeoutMs : 12_000;
+
+    [JsonIgnore]
+    public string EffectiveLocale => Locale.Equals("ru", StringComparison.OrdinalIgnoreCase) ||
+                                     Locale.Equals("rus", StringComparison.OrdinalIgnoreCase)
+        ? "ru"
+        : "en";
 }

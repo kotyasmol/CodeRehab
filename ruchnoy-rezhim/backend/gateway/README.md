@@ -1,5 +1,5 @@
-# API Gateway / BFF
+# Backend Gateway
 
-Единая точка входа для frontend. Позже здесь появятся маршрутизация к сервисам, CORS, авторизация, агрегация данных для экранов и health checks.
+Single entry point for the frontend. Later it can host service routing, CORS, authorization, screen-level data aggregation, and health checks.
 
-На первом этапе backend-код намеренно не реализован.
+Gateway code is intentionally not implemented in the first phase.

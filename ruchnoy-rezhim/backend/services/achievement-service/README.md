@@ -1,5 +1,5 @@
 # Achievement Service
 
-Будущий сервис достижений: первое решенное задание, серия дней, завершенный модуль и другие бейджи.
+Future service for achievements: first solved task, daily streaks, completed modules, and other badges.
 
-На первом этапе содержит только описание ответственности.
+The first phase only documents the service responsibility.

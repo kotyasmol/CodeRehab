@@ -47,11 +47,11 @@ public static class LessonTests
         return new List<CheckResult>
         {
             db.OutboxMessages.Count == 1 && bus.Published == 0
-                ? Check.Pass("OrderCreated пишется в outbox, а не публикуется напрямую")
-                : Check.Fail("OrderCreated пишется в outbox, а не публикуется напрямую", "Outbox=" + db.OutboxMessages.Count + ", direct publish=" + bus.Published),
+                ? Check.Pass("OrderCreated is written to the outbox instead of being published directly")
+                : Check.Fail("OrderCreated is written to the outbox instead of being published directly", "Outbox=" + db.OutboxMessages.Count + ", direct publish=" + bus.Published),
             db.Orders.Count == 1
-                ? Check.Pass("Повтор команды с тем же requestId не создает второй заказ")
-                : Check.Fail("Повтор команды с тем же requestId не создает второй заказ", "Orders.Count=" + db.Orders.Count)
+                ? Check.Pass("Repeating a command with the same requestId does not create a second order")
+                : Check.Fail("Repeating a command with the same requestId does not create a second order", "Orders.Count=" + db.Orders.Count)
         };
     }
 }

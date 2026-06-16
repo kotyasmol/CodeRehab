@@ -1,5 +1,5 @@
 # Identity Service
 
-Будущий сервис регистрации, входа, JWT/refresh tokens, ролей `user` и `admin`, а также профиля пользователя.
+Future service for registration, sign-in, JWT/refresh tokens, `user` and `admin` roles, and user profiles.
 
-На первом этапе содержит только описание ответственности.
+The first phase only documents the service responsibility.

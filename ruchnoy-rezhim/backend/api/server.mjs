@@ -6,7 +6,10 @@ import { dirname, resolve } from "node:path";
 import { runSolutionCheck } from "../services/code-runner-service/runner/solutionRunner.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const lessonsPath = resolve(__dirname, "../../shared/data/lessons.json");
+const lessonPaths = {
+  en: resolve(__dirname, "../../shared/data/lessons.json"),
+  ru: resolve(__dirname, "../../shared/data/lessons.ru.json"),
+};
 const port = Number(process.env.CODE_REHAB_BACKEND_PORT ?? 5088);
 const host = process.env.CODE_REHAB_BACKEND_HOST ?? "127.0.0.1";
 const corsOrigins = (process.env.CODE_REHAB_CORS_ORIGINS ?? "http://127.0.0.1:5173,http://localhost:5173")
@@ -15,7 +18,7 @@ const corsOrigins = (process.env.CODE_REHAB_CORS_ORIGINS ?? "http://127.0.0.1:51
   .filter(Boolean);
 const submissions = new Map();
 
-let cachedLessons = null;
+const cachedLessons = new Map();
 
 const server = createServer(async (request, response) => {
   try {
@@ -35,21 +38,22 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === "GET" && url.pathname === "/api/lessons") {
-      const lessons = await loadLessons();
+      const lessons = await loadLessons(getRequestedLanguage(url));
       sendJson(response, 200, lessons);
       return;
     }
 
     const lessonMatch = url.pathname.match(/^\/api\/lessons\/([^/]+)$/);
     if (request.method === "GET" && lessonMatch) {
-      const lesson = (await loadLessons()).find((item) => item.id === lessonMatch[1]);
+      const lesson = (await loadLessons(getRequestedLanguage(url))).find((item) => item.id === lessonMatch[1]);
       sendJson(response, lesson ? 200 : 404, lesson ?? { error: "Lesson not found" });
       return;
     }
 
     if (request.method === "POST" && url.pathname === "/api/submissions/check") {
       const body = await readJson(request);
-      const lessons = await loadLessons();
+      const uiLanguage = normalizeLanguage(body.uiLanguage);
+      const lessons = await loadLessons(uiLanguage);
       const lesson = lessons.find((item) => item.id === body.lessonId);
 
       if (!lesson) {
@@ -62,7 +66,7 @@ const server = createServer(async (request, response) => {
         return;
       }
 
-      const check = await runSolutionCheck(lesson.id, body.code);
+      const check = await runSolutionCheck(lesson.id, body.code, uiLanguage);
       const submission = {
         id: randomUUID(),
         lessonId: lesson.id,
@@ -106,12 +110,22 @@ server.listen(port, host, () => {
   console.log(`CodeRehab backend listening on http://${host}:${port}`);
 });
 
-async function loadLessons() {
-  if (!cachedLessons) {
-    cachedLessons = JSON.parse(await readFile(lessonsPath, "utf8"));
+async function loadLessons(language = "en") {
+  const normalizedLanguage = normalizeLanguage(language);
+
+  if (!cachedLessons.has(normalizedLanguage)) {
+    cachedLessons.set(normalizedLanguage, JSON.parse(await readFile(lessonPaths[normalizedLanguage], "utf8")));
   }
 
-  return cachedLessons;
+  return cachedLessons.get(normalizedLanguage);
+}
+
+function getRequestedLanguage(url) {
+  return normalizeLanguage(url.searchParams.get("lang"));
+}
+
+function normalizeLanguage(value) {
+  return value === "ru" || value === "rus" ? "ru" : "en";
 }
 
 function readJson(request) {

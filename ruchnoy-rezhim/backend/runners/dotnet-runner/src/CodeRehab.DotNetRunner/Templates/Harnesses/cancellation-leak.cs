@@ -31,8 +31,8 @@ public static class LessonTests
         var tests = new List<CheckResult>
         {
             catalog.SawCancelableToken && reviews.SawCancelableToken && help.SawCancelableToken
-                ? Check.Pass("RequestAborted прокинут во все downstream-вызовы")
-                : Check.Fail("RequestAborted прокинут во все downstream-вызовы", "Один из сервисов получил CancellationToken.None.")
+                ? Check.Pass("RequestAborted is passed to every downstream call")
+                : Check.Fail("RequestAborted is passed to every downstream call", "One of the services received CancellationToken.None.")
         };
 
         var brokenReviews = new SearchSpy("review", throws: true);
@@ -42,12 +42,12 @@ public static class LessonTests
         {
             var result = await partial.Search("phone");
             tests.Add(result is OkObjectResult
-                ? Check.Pass("Падение одного поиска не ломает весь ответ")
-                : Check.Fail("Падение одного поиска не ломает весь ответ", "Ожидался OkObjectResult с частичными данными."));
+                ? Check.Pass("One failed search does not break the whole response")
+                : Check.Fail("One failed search does not break the whole response", "Expected OkObjectResult with partial data."));
         }
         catch (Exception ex)
         {
-            tests.Add(Check.Fail("Падение одного поиска не ломает весь ответ", ex.GetType().Name + ": " + ex.Message));
+            tests.Add(Check.Fail("One failed search does not break the whole response", ex.GetType().Name + ": " + ex.Message));
         }
         return tests;
     }

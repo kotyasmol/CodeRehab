@@ -50,7 +50,7 @@ catch (Exception error)
         Error = error.Message,
         Tests = new[]
         {
-            new TestResult("Конфигурация runner-а", false, error.Message)
+            new TestResult("Runner configuration", false, error.Message)
         }
     };
 }

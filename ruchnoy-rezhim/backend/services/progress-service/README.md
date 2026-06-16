@@ -1,5 +1,5 @@
 # Progress Service
 
-Будущий сервис прогресса пользователя: решенные задания, завершенные уроки, streak, темы и счетчики попыток.
+Future service for user progress: solved tasks, completed lessons, streaks, topics, and attempt counters.
 
-На первом этапе хранение прогресса не реализуется.
+Progress storage is not implemented in the first phase.

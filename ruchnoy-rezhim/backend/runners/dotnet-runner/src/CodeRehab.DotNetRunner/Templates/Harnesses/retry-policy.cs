@@ -30,25 +30,25 @@ public static class LessonTests
         {
             id = await client.CreateLeadAsync(new NewLead("a@example.com", "Ann", "req-1"), CancellationToken.None);
             tests.Add(id == "lead-1" && handler.Requests.Count == 2
-                ? Check.Pass("Временная 5xx ошибка повторяется и затем возвращает LeadId")
-                : Check.Fail("Временная 5xx ошибка повторяется и затем возвращает LeadId", "Requests=" + handler.Requests.Count + ", LeadId=" + id));
+                ? Check.Pass("Temporary 5xx failure is retried and then returns LeadId")
+                : Check.Fail("Temporary 5xx failure is retried and then returns LeadId", "Requests=" + handler.Requests.Count + ", LeadId=" + id));
         }
         catch (Exception ex)
         {
-            tests.Add(Check.Fail("Временная 5xx ошибка повторяется и затем возвращает LeadId", ex.GetType().Name + ": " + ex.Message));
+            tests.Add(Check.Fail("Temporary 5xx failure is retried and then returns LeadId", ex.GetType().Name + ": " + ex.Message));
         }
 
         tests.Add(handler.Requests.Count > 0 && handler.Requests.All(x => x.Headers.Contains("Idempotency-Key"))
-            ? Check.Pass("Каждая попытка содержит Idempotency-Key")
-            : Check.Fail("Каждая попытка содержит Idempotency-Key", "Хотя бы один POST ушел без идемпотентного ключа."));
+            ? Check.Pass("Every attempt contains Idempotency-Key")
+            : Check.Fail("Every attempt contains Idempotency-Key", "At least one POST was sent without an idempotency key."));
 
         var bad = new SequenceHandler(new HttpResponseMessage(HttpStatusCode.BadRequest));
         var badClient = ReflectionTools.CreateWithFields<CrmLeadClient>(("_http", new HttpClient(bad) { BaseAddress = new Uri("https://crm.local") }));
         try { await badClient.CreateLeadAsync(new NewLead("bad", "Bad", "req-2"), CancellationToken.None); }
         catch { }
         tests.Add(bad.Requests.Count == 1
-            ? Check.Pass("4xx ошибки не ретраятся")
-            : Check.Fail("4xx ошибки не ретраятся", "BadRequest был отправлен " + bad.Requests.Count + " раз."));
+            ? Check.Pass("4xx errors are not retried")
+            : Check.Fail("4xx errors are not retried", "BadRequest was sent " + bad.Requests.Count + " times."));
         return tests;
     }
 }

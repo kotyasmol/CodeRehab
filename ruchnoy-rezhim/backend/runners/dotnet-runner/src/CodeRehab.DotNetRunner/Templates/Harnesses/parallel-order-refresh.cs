@@ -64,16 +64,16 @@ public static class LessonTests
 
         RefreshSummary? summary = null;
         try { summary = await job.RunAsync(CancellationToken.None); }
-        catch (Exception ex) { tests.Add(Check.Fail("Job не падает из-за одного заказа", ex.GetType().Name + ": " + ex.Message)); }
+        catch (Exception ex) { tests.Add(Check.Fail("Job does not fail because of one order", ex.GetType().Name + ": " + ex.Message)); }
 
         if (summary is not null)
         {
             tests.Add(partner.MaxConcurrency > 1
-                ? Check.Pass("Запросы к партнеру выполняются конкурентно")
-                : Check.Fail("Запросы к партнеру выполняются конкурентно", "MaxConcurrency остался 1: job все еще идет последовательно."));
+                ? Check.Pass("Partner requests run concurrently")
+                : Check.Fail("Partner requests run concurrently", "MaxConcurrency stayed at 1: the job is still sequential."));
             tests.Add(summary.Failed == 1 && summary.Updated == 4
-                ? Check.Pass("Ошибки отдельных заказов попадают в summary")
-                : Check.Fail("Ошибки отдельных заказов попадают в summary", "Ожидалось Updated=4, Failed=1. Фактически: " + summary + "."));
+                ? Check.Pass("Individual order errors are included in the summary")
+                : Check.Fail("Individual order errors are included in the summary", "Expected Updated=4, Failed=1. Actual: " + summary + "."));
         }
 
         return tests;

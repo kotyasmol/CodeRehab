@@ -18,6 +18,7 @@ It is built for developers who want to regain confidence writing code manually: 
 
 - Shows a catalog of practical backend async tasks.
 - Opens each task as a single editable C# file.
+- Supports English and Russian UI/content through frontend and backend dictionaries.
 - Provides a checklist and learning hints for the scenario.
 - Runs real behavioral tests against the submitted code.
 - Returns per-test `OK` / `FAIL` feedback instead of comparing two files.
@@ -78,8 +79,8 @@ Backend runs on `http://127.0.0.1:5088`.
 
 ```text
 GET  /health
-GET  /api/lessons
-GET  /api/lessons/:id
+GET  /api/lessons?lang=en|ru
+GET  /api/lessons/:id?lang=en|ru
 POST /api/submissions/check
 GET  /api/submissions/:id
 GET  /api/submissions?lessonId=:id
@@ -90,7 +91,8 @@ Example submission request:
 ```json
 {
   "lessonId": "webhook-idempotency",
-  "code": "public sealed class PaymentWebhookHandler { ... }"
+  "code": "public sealed class PaymentWebhookHandler { ... }",
+  "uiLanguage": "en"
 }
 ```
 
@@ -178,6 +180,8 @@ http://127.0.0.1:5173
 ```
 
 The Vite dev server proxies `/api` to `http://127.0.0.1:5088`.
+
+The language toggle stores the selected language in `localStorage` and requests localized lesson data from the backend.
 
 ## Build
 

@@ -42,11 +42,11 @@ public static class LessonTests
         return new List<CheckResult>
         {
             repo.Calls == 1
-                ? Check.Pass("Параллельный cache miss загружает профиль один раз")
-                : Check.Fail("Параллельный cache miss загружает профиль один раз", "LoadProfileAsync вызван " + repo.Calls + " раз."),
+                ? Check.Pass("Parallel cache miss loads the profile once")
+                : Check.Fail("Parallel cache miss loads the profile once", "LoadProfileAsync was called " + repo.Calls + " times."),
             profiles.All(x => x.UserId == userId)
-                ? Check.Pass("Все ожидающие запросы получают один корректный результат")
-                : Check.Fail("Все ожидающие запросы получают один корректный результат", "Часть запросов получила неверный профиль.")
+                ? Check.Pass("All waiting requests receive one correct result")
+                : Check.Fail("All waiting requests receive one correct result", "Some requests received the wrong profile.")
         };
     }
 }

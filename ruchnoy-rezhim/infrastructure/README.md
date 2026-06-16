@@ -1,5 +1,5 @@
 # Infrastructure
 
-Здесь позже появятся Docker Compose, конфигурации PostgreSQL, RabbitMQ, Redis и окружения для локального запуска.
+This folder is reserved for local runtime infrastructure such as Docker Compose, PostgreSQL, RabbitMQ, Redis, and environment configuration.
 
-На первом этапе инфраструктура не поднимается.
+The first project phase does not start additional infrastructure from this folder.

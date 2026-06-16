@@ -60,11 +60,11 @@ public static class LessonTests
         try { await execute; } catch (OperationCanceledException) { }
 
         tests.Add(job.Status == "succeeded" && job.DownloadUrl is not null
-            ? Check.Pass("Успешный экспорт получает финальный статус и ссылку")
-            : Check.Fail("Успешный экспорт получает финальный статус и ссылку", "Status=" + job.Status + ", DownloadUrl=" + job.DownloadUrl));
+            ? Check.Pass("Successful export gets a final status and URL")
+            : Check.Fail("Successful export gets a final status and URL", "Status=" + job.Status + ", DownloadUrl=" + job.DownloadUrl));
         tests.Add(queue.SavedStatuses.Contains("running") && queue.SavedStatuses.Contains("succeeded")
-            ? Check.Pass("Worker сохраняет промежуточный и финальный статусы")
-            : Check.Fail("Worker сохраняет промежуточный и финальный статусы", "Сохраненные статусы: " + string.Join(", ", queue.SavedStatuses)));
+            ? Check.Pass("Worker saves intermediate and final statuses")
+            : Check.Fail("Worker saves intermediate and final statuses", "Saved statuses: " + string.Join(", ", queue.SavedStatuses)));
         return tests;
     }
 }

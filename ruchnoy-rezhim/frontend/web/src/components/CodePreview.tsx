@@ -1,3 +1,5 @@
+import { useI18n } from "../i18n/LanguageContext";
+
 const codeLines = [
   "public static string CheckRange(int value)",
   "{",
@@ -9,8 +11,10 @@ const codeLines = [
 ];
 
 export function CodePreview() {
+  const { t } = useI18n();
+
   return (
-    <pre className="code-preview" aria-label="Пример кода C#">
+    <pre className="code-preview" aria-label={t("codeExampleLabel")}>
       <code>
         {codeLines.map((line, index) => (
           <span key={`${line}-${index}`}>

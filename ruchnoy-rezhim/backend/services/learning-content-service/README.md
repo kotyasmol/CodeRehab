@@ -1,5 +1,5 @@
 # Learning Content Service
 
-Будущий сервис учебного контента: курсы, модули, уроки, задания, подсказки, стартовый код, тест-кейсы и эталонные решения.
+Future service for learning content: courses, modules, lessons, tasks, hints, starter code, test cases, and reference solutions.
 
-Для MVP следующим шагом можно начать с seed-данных по первым C#-модулям.
+For the MVP, the next step can start with seed data for the first C# modules.

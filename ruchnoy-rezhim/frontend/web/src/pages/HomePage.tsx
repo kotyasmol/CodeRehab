@@ -5,15 +5,17 @@ import { LessonCard } from "../components/LessonCard";
 import { ProgressStrip } from "../components/ProgressStrip";
 import { TopicTicker } from "../components/TopicTicker";
 import { fetchLessons, type Lesson } from "../data/mockLessons";
+import { useI18n } from "../i18n/LanguageContext";
 
 export function HomePage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const { language, t } = useI18n();
 
   useEffect(() => {
-    fetchLessons()
+    fetchLessons(language)
       .then((items) => setLessons(items.slice(0, 3)))
       .catch(() => setLessons([]));
-  }, []);
+  }, [language]);
 
   return (
     <>
@@ -22,8 +24,8 @@ export function HomePage() {
 
       <section className="home-section lessons-preview">
         <div className="section-heading">
-          <h2>Тренировки на сегодня</h2>
-          <p>Короткие задания без гонки и стыда за красные ошибки.</p>
+          <h2>{t("homePracticeTitle")}</h2>
+          <p>{t("homePracticeBody")}</p>
         </div>
         <div className="lesson-grid">
           {lessons.map((lesson) => (
@@ -34,11 +36,8 @@ export function HomePage() {
 
       <section className="home-section code-lab-section">
         <div>
-          <h2>Пиши маленькими шагами</h2>
-          <p>
-            Сначала сигнатура метода, потом условие, потом один тест. Так руки
-            снова вспоминают синтаксис.
-          </p>
+          <h2>{t("smallStepsTitle")}</h2>
+          <p>{t("smallStepsBody")}</p>
         </div>
         <CodePreview />
       </section>

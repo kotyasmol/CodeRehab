@@ -66,8 +66,8 @@ public static class LessonTests
 
         await handler.HandleAsync(new PaymentWebhook("evt-1", Guid.NewGuid(), 10), CancellationToken.None);
         return balances.AddCalls == 0
-            ? Check.Pass("Повторный webhook не начисляет баланс")
-            : Check.Fail("Повторный webhook не начисляет баланс", "Для уже обработанного eventId был вызван AddCreditsAsync.");
+            ? Check.Pass("Duplicate webhook does not credit the balance")
+            : Check.Fail("Duplicate webhook does not credit the balance", "AddCreditsAsync was called for an already processed eventId.");
     }
 
     private static async Task<CheckResult> ConcurrentDuplicate()
@@ -91,7 +91,7 @@ public static class LessonTests
         );
 
         return balances.AddCalls == 1
-            ? Check.Pass("Параллельные webhook не дают двойного начисления")
-            : Check.Fail("Параллельные webhook не дают двойного начисления", "Ожидался 1 вызов AddCreditsAsync, фактически: " + balances.AddCalls + ".");
+            ? Check.Pass("Concurrent webhooks do not double-credit the account")
+            : Check.Fail("Concurrent webhooks do not double-credit the account", "Expected 1 AddCreditsAsync call, actual: " + balances.AddCalls + ".");
     }
 }

@@ -1,10 +1,10 @@
 # CodeRehab.DotNetRunner
 
-Отдельный .NET runner для проверки C# решений в CodeRehab / ruchnoy-rezhim.
+Standalone .NET runner for checking C# solutions in CodeRehab / ruchnoy-rezhim.
 
-Runner принимает JSON-запрос, создает временный `.NET` console project, копирует туда пользовательский `UserSolution.cs`, общую поддержку и task-specific harness из `Templates/Harnesses`, выполняет `dotnet restore`, `dotnet build`, `dotnet run` с timeout и возвращает структурированный JSON.
+The runner accepts a JSON request, creates a temporary `.NET` console project, copies the submitted `UserSolution.cs`, shared support code, and a task-specific harness from `Templates/Harnesses`, runs `dotnet restore`, `dotnet build`, and `dotnet run` with timeouts, then returns structured JSON.
 
-## Структура
+## Structure
 
 ```text
 dotnet-runner/
@@ -21,7 +21,7 @@ dotnet-runner/
   examples/smoke-request.json
 ```
 
-## Запуск
+## Run
 
 ```bash
 dotnet restore CodeRehab.DotNetRunner.sln
@@ -35,7 +35,7 @@ Smoke-run:
 dotnet run --project src/CodeRehab.DotNetRunner/CodeRehab.DotNetRunner.csproj -- --request examples/smoke-request.json
 ```
 
-Можно также передать JSON через stdin:
+You can also pass JSON through stdin:
 
 ```bash
 type examples\smoke-request.json | dotnet run --project src\CodeRehab.DotNetRunner\CodeRehab.DotNetRunner.csproj
@@ -47,13 +47,16 @@ type examples\smoke-request.json | dotnet run --project src\CodeRehab.DotNetRunn
 {
   "taskId": "async-cache-stampede",
   "language": "csharp",
+  "locale": "en",
   "userCode": "public sealed class UserProfileCache { ... }",
   "timeoutMs": 12000,
   "debug": false
 }
 ```
 
-`debug: true` оставляет временную директорию после выполнения. По умолчанию временные файлы удаляются.
+`debug: true` keeps the temporary workspace after execution. Temporary files are deleted by default.
+
+`locale` controls runner-facing messages. Supported values are `en` and `ru`.
 
 ## Response
 
@@ -69,22 +72,22 @@ type examples\smoke-request.json | dotnet run --project src\CodeRehab.DotNetRunn
   "durationMs": 1234,
   "exitCode": 0,
   "tests": [
-    { "name": "Параллельный cache miss загружает профиль один раз", "passed": true, "message": "OK" }
+    { "name": "Parallel cache miss loads the profile once", "passed": true, "message": "OK" }
   ]
 }
 ```
 
-Возможные `status`: `passed`, `failed`, `compile_error`, `runtime_error`, `timeout`, `configuration_error`.
+Possible `status` values: `passed`, `failed`, `compile_error`, `runtime_error`, `timeout`, `configuration_error`.
 
-## Интеграция с backend
+## Backend Integration
 
-Node backend сохраняет прежний HTTP API. `backend/services/code-runner-service/runner/solutionRunner.mjs` теперь вызывает этот runner как отдельный процесс:
+The Node backend keeps the existing HTTP API. `backend/services/code-runner-service/runner/solutionRunner.mjs` calls this runner as a separate process:
 
 ```text
 dotnet run --project backend/runners/dotnet-runner/src/CodeRehab.DotNetRunner/CodeRehab.DotNetRunner.csproj -- --request <temp-request.json>
 ```
 
-После этого adapter преобразует расширенный ответ runner-а в старый frontend-формат `{ passed, total, tests }`.
+The adapter converts the extended runner response back to the frontend format `{ passed, total, tests }`.
 
 ## Docker
 
@@ -95,6 +98,6 @@ cd ../../..
 docker compose up --build
 ```
 
-## Ограничения
+## Limitations
 
-Это локальный training runner, а не production sandbox. Он использует временные директории и timeout, но не изолирует CPU, память, файловую систему и сеть на уровне контейнера/OS policy.
+This is a local training runner, not a production sandbox. It uses temporary directories and timeouts, but it does not isolate CPU, memory, the filesystem, or the network at the container/OS policy level.

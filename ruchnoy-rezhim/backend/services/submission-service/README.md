@@ -1,9 +1,9 @@
 # Submission Service
 
-Отправка решений реализована в локальном backend API:
+Solution submission is currently implemented in the local backend API:
 
-- `POST /api/submissions/check` принимает `lessonId` и `code`.
-- backend запускает code-runner и возвращает submission с `passed` / `failed` статусом.
-- результаты хранятся в памяти процесса и доступны через `GET /api/submissions/:id`.
+- `POST /api/submissions/check` accepts `lessonId` and `code`.
+- The backend starts the code runner and returns a submission with `passed` / `failed` status.
+- Results are stored in process memory and are available through `GET /api/submissions/:id`.
 
-На следующем этапе это можно вынести в отдельный сервис с постоянной БД, очередью и воркерами.
+A later phase can move this into a separate service with persistent storage, a queue, and workers.

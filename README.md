@@ -6,6 +6,8 @@ The application lives in [`ruchnoy-rezhim`](ruchnoy-rezhim/): it includes the fr
 
 ## Screenshots
 
+![Backend Rehab mobile app mockup](ruchnoy-rezhim/frontend/web/.qa/mobile-app-mockup.png)
+
 ![Backend Rehab home desktop](ruchnoy-rezhim/frontend/web/.qa/home-desktop.png)
 
 ![Backend Rehab home mobile](ruchnoy-rezhim/frontend/web/.qa/home-mobile.png)

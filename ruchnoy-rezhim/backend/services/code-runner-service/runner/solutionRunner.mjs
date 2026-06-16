@@ -15,19 +15,21 @@ const runnerProjectPath = resolve(
 
 const runTimeoutMs = 12000;
 
-export async function runSolutionCheck(lessonId, code) {
+export async function runSolutionCheck(lessonId, code, uiLanguage = "en") {
+  const locale = normalizeLanguage(uiLanguage);
   const request = {
     taskId: lessonId,
     language: "csharp",
+    locale,
     userCode: code,
     timeoutMs: runTimeoutMs,
   };
 
   try {
     const runnerResult = await invokeDotNetRunner(request);
-    return toLegacyCheckResult(runnerResult);
+    return toLegacyCheckResult(runnerResult, locale);
   } catch (error) {
-    return failedRun(error);
+    return failedRun(error, locale);
   }
 }
 
@@ -82,14 +84,14 @@ function parseRunnerJson(stdout) {
   return null;
 }
 
-function toLegacyCheckResult(runnerResult) {
+function toLegacyCheckResult(runnerResult, language = "en") {
   const tests = Array.isArray(runnerResult.tests) && runnerResult.tests.length > 0
     ? runnerResult.tests.map((test) => ({
         name: test.name,
         passed: Boolean(test.passed),
         message: test.message ?? "",
       }))
-    : [fallbackTest(runnerResult)];
+    : [fallbackTest(runnerResult, language)];
 
   const passed = Number.isFinite(runnerResult.testsPassed)
     ? runnerResult.testsPassed
@@ -102,9 +104,9 @@ function toLegacyCheckResult(runnerResult) {
   return { passed, total, tests };
 }
 
-function fallbackTest(runnerResult) {
+function fallbackTest(runnerResult, language = "en") {
   return {
-    name: statusName(runnerResult.status),
+    name: statusName(runnerResult.status, language),
     passed: Boolean(runnerResult.passed),
     message:
       runnerResult.error ??
@@ -114,41 +116,50 @@ function fallbackTest(runnerResult) {
   };
 }
 
-function statusName(status) {
+function statusName(status, language = "en") {
+  const ru = language === "ru";
+
   switch (status) {
     case "timeout":
-      return "Код завершился по таймауту";
+      return ru ? "Код завершился по таймауту" : "Code timed out";
     case "compile_error":
-      return "Компиляция";
+      return ru ? "Компиляция" : "Compilation";
     case "configuration_error":
-      return "Конфигурация проверки";
+      return ru ? "Конфигурация проверки" : "Check configuration";
     default:
-      return "Компиляция или запуск";
+      return ru ? "Компиляция или запуск" : "Compilation or execution";
   }
 }
 
-function failedRun(error) {
+function failedRun(error, language = "en") {
   const output = `${error.stdout ?? ""}\n${error.stderr ?? ""}`.trim();
   const timedOut = error.killed || error.signal === "SIGTERM";
+  const ru = language === "ru";
 
   return {
     passed: 0,
     total: 1,
     tests: [
       {
-        name: timedOut ? "Код завершился по таймауту" : "Компиляция или запуск",
+        name: timedOut ? statusName("timeout", language) : statusName("runtime_error", language),
         passed: false,
         message: timedOut
-          ? "Проверка не завершилась за 12 секунд. Обычно это зависший await, .Result, Wait или неучтенная отмена."
+          ? ru
+            ? "Проверка не завершилась за 12 секунд. Обычно это зависший await, .Result, Wait или неучтенная отмена."
+            : "The check did not finish within 12 seconds. This is usually a stuck await, .Result, Wait, or missed cancellation."
           : trimOutput(output),
       },
     ],
   };
 }
 
+function normalizeLanguage(value) {
+  return value === "ru" || value === "rus" ? "ru" : "en";
+}
+
 function trimOutput(output) {
   if (!output) {
-    return "dotnet-runner завершился с ошибкой без диагностического вывода.";
+    return "dotnet-runner failed without diagnostic output.";
   }
 
   return output.split(/\r?\n/).slice(-24).join("\n");

@@ -38,9 +38,10 @@ public sealed class DotNetExecutionService
             return SingleFailure(
                 RunnerStatuses.ConfigurationError,
                 "Unsupported language",
-                "Поддерживается только C#.",
+                ResultLocalizer.Localize("Only C# is supported.", request.EffectiveLocale),
                 testsTotal: 1,
-                stopwatch.ElapsedMilliseconds);
+                stopwatch.ElapsedMilliseconds,
+                request.EffectiveLocale);
         }
 
         if (!_harnesses.Contains(request.TaskId))
@@ -48,9 +49,10 @@ public sealed class DotNetExecutionService
             return SingleFailure(
                 RunnerStatuses.ConfigurationError,
                 "Missing harness",
-                "Для этого задания еще нет набора тестов.",
+                ResultLocalizer.Localize("This task does not have a test harness yet.", request.EffectiveLocale),
                 testsTotal: 1,
-                stopwatch.ElapsedMilliseconds);
+                stopwatch.ElapsedMilliseconds,
+                request.EffectiveLocale);
         }
 
         var expectedTests = _harnesses.GetExpectedTestCount(request.TaskId);
@@ -69,7 +71,7 @@ public sealed class DotNetExecutionService
 
             if (restore.ExitCode != 0 || restore.TimedOut)
             {
-                return CompileError(restore, expectedTests, stopwatch.ElapsedMilliseconds);
+                return CompileError(restore, expectedTests, stopwatch.ElapsedMilliseconds, request.EffectiveLocale);
             }
 
             var build = await _processRunner.RunAsync(
@@ -81,7 +83,7 @@ public sealed class DotNetExecutionService
 
             if (build.ExitCode != 0 || build.TimedOut)
             {
-                return CompileError(build, expectedTests, stopwatch.ElapsedMilliseconds);
+                return CompileError(build, expectedTests, stopwatch.ElapsedMilliseconds, request.EffectiveLocale);
             }
 
             var run = await _processRunner.RunAsync(
@@ -101,15 +103,15 @@ public sealed class DotNetExecutionService
                     TestsTotal = expectedTests,
                     CompileOutput = "",
                     RuntimeOutput = "",
-                    Error = "Execution timed out",
+                    Error = ResultLocalizer.Localize("Execution timed out", request.EffectiveLocale),
                     DurationMs = stopwatch.ElapsedMilliseconds,
                     ExitCode = run.ExitCode,
                     Tests = new[]
                     {
                         new TestResult(
-                            "Код завершился по таймауту",
+                            ResultLocalizer.Localize("Code timed out", request.EffectiveLocale),
                             false,
-                            "Проверка не завершилась за " + request.EffectiveTimeoutMs + "ms. Обычно это зависший await, .Result, Wait или неучтенная отмена.")
+                            ResultLocalizer.Localize("The check did not finish within " + request.EffectiveTimeoutMs + "ms. This is usually a stuck await, .Result, Wait, or missed cancellation.", request.EffectiveLocale))
                     }
                 };
             }
@@ -117,8 +119,9 @@ public sealed class DotNetExecutionService
             var tests = _resultParser.TryParseTests(run.Stdout);
             if (tests is not null)
             {
+                var localizedTests = ResultLocalizer.LocalizeTests(tests, request.EffectiveLocale);
                 return RunnerResult.FromTests(
-                    tests,
+                    localizedTests,
                     _resultParser.RemoveResultLine(run.Stdout),
                     stopwatch.ElapsedMilliseconds,
                     run.ExitCode);
@@ -136,7 +139,10 @@ public sealed class DotNetExecutionService
                 ExitCode = run.ExitCode,
                 Tests = new[]
                 {
-                    new TestResult("Компиляция или запуск", false, TrimOutput(run.CombinedOutput))
+                    new TestResult(
+                        ResultLocalizer.Localize("Compilation or execution", request.EffectiveLocale),
+                        false,
+                        TrimOutput(run.CombinedOutput))
                 }
             };
         }
@@ -182,7 +188,7 @@ public sealed class DotNetExecutionService
             cancellationToken);
     }
 
-    private static RunnerResult CompileError(ProcessRunResult process, int testsTotal, long durationMs) =>
+    private static RunnerResult CompileError(ProcessRunResult process, int testsTotal, long durationMs, string locale) =>
         new()
         {
             Status = RunnerStatuses.CompileError,
@@ -191,12 +197,12 @@ public sealed class DotNetExecutionService
             TestsTotal = testsTotal,
             CompileOutput = TrimOutput(process.CombinedOutput),
             RuntimeOutput = "",
-            Error = process.TimedOut ? "Compilation timed out" : "Compilation failed",
+            Error = ResultLocalizer.Localize(process.TimedOut ? "Compilation timed out" : "Compilation failed", locale),
             DurationMs = durationMs,
             ExitCode = process.ExitCode,
             Tests = new[]
             {
-                new TestResult("Компиляция", false, TrimOutput(process.CombinedOutput))
+                new TestResult(ResultLocalizer.Localize("Compilation", locale), false, TrimOutput(process.CombinedOutput))
             }
         };
 
@@ -205,7 +211,8 @@ public sealed class DotNetExecutionService
         string error,
         string message,
         int testsTotal,
-        long durationMs) =>
+        long durationMs,
+        string locale) =>
         new()
         {
             Status = status,
@@ -216,7 +223,7 @@ public sealed class DotNetExecutionService
             DurationMs = durationMs,
             Tests = new[]
             {
-                new TestResult("Конфигурация проверки", false, message)
+                new TestResult(ResultLocalizer.Localize("Check configuration", locale), false, message)
             }
         };
 
@@ -224,7 +231,7 @@ public sealed class DotNetExecutionService
     {
         if (string.IsNullOrWhiteSpace(output))
         {
-            return "dotnet завершился с ошибкой без диагностического вывода.";
+            return "dotnet failed without diagnostic output.";
         }
 
         return string.Join(
