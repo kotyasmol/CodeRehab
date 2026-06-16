@@ -8,13 +8,18 @@ import { runSolutionCheck } from "../services/code-runner-service/runner/solutio
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const lessonsPath = resolve(__dirname, "../../shared/data/lessons.json");
 const port = Number(process.env.CODE_REHAB_BACKEND_PORT ?? 5088);
+const host = process.env.CODE_REHAB_BACKEND_HOST ?? "127.0.0.1";
+const corsOrigins = (process.env.CODE_REHAB_CORS_ORIGINS ?? "http://127.0.0.1:5173,http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const submissions = new Map();
 
 let cachedLessons = null;
 
 const server = createServer(async (request, response) => {
   try {
-    setCorsHeaders(response);
+    setCorsHeaders(request, response);
 
     if (request.method === "OPTIONS") {
       response.writeHead(204);
@@ -97,8 +102,8 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`CodeRehab backend listening on http://127.0.0.1:${port}`);
+server.listen(port, host, () => {
+  console.log(`CodeRehab backend listening on http://${host}:${port}`);
 });
 
 async function loadLessons() {
@@ -130,8 +135,15 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
-function setCorsHeaders(response) {
-  response.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:5173");
+function setCorsHeaders(request, response) {
+  const requestOrigin = request.headers.origin;
+  const allowedOrigin =
+    corsOrigins.includes("*") || !requestOrigin || corsOrigins.includes(requestOrigin)
+      ? (corsOrigins.includes("*") ? "*" : requestOrigin ?? corsOrigins[0])
+      : corsOrigins[0];
+
+  response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  response.setHeader("Vary", "Origin");
   response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }

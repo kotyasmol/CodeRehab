@@ -1,0 +1,28 @@
+name: code-rehab
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      CODE_REHAB_BACKEND_HOST: 0.0.0.0
+      CODE_REHAB_BACKEND_PORT: 5088
+      CODE_REHAB_CORS_ORIGINS: "http://127.0.0.1:${CODE_REHAB_FRONTEND_PORT:-5173},http://localhost:${CODE_REHAB_FRONTEND_PORT:-5173}"
+    ports:
+      - "${CODE_REHAB_BACKEND_PORT:-5088}:5088"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5088/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/web/Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${CODE_REHAB_FRONTEND_PORT:-5173}:80"

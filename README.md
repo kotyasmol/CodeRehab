@@ -12,14 +12,23 @@ The application lives in [`ruchnoy-rezhim`](ruchnoy-rezhim/): it includes the fr
 
 ## Quick Start
 
+With Docker:
+
+```bash
+cd ruchnoy-rezhim
+docker compose up --build
+```
+
+Open `http://127.0.0.1:5173`.
+
+Local development without Docker:
+
 ```bash
 cd ruchnoy-rezhim/frontend/web
 npm install
 npm run dev:backend
 npm run dev
 ```
-
-Open `http://127.0.0.1:5173`.
 
 ## Repository Guide
 

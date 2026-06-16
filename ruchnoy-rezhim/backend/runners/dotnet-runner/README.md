@@ -86,6 +86,15 @@ dotnet run --project backend/runners/dotnet-runner/src/CodeRehab.DotNetRunner/Co
 
 После этого adapter преобразует расширенный ответ runner-а в старый frontend-формат `{ passed, total, tests }`.
 
+## Docker
+
+Project-level Docker Compose builds a backend image with Node.js plus the .NET SDK. That image runs the Node API and uses this runner for C# submissions.
+
+```bash
+cd ../../..
+docker compose up --build
+```
+
 ## Ограничения
 
 Это локальный training runner, а не production sandbox. Он использует временные директории и timeout, но не изолирует CPU, память, файловую систему и сеть на уровне контейнера/OS policy.

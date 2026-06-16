@@ -20,3 +20,11 @@ npm run dev:backend
 The frontend dev server proxies `/api` to `http://127.0.0.1:5088`.
 
 For C# submissions, the API calls the .NET runner at `backend/runners/dotnet-runner` through the `code-runner-service` adapter. The HTTP endpoint shape is unchanged.
+
+Docker sets:
+
+- `CODE_REHAB_BACKEND_HOST=0.0.0.0`
+- `CODE_REHAB_BACKEND_PORT=5088`
+- `CODE_REHAB_CORS_ORIGINS=...`
+
+Without Docker the backend still defaults to `127.0.0.1:5088`.

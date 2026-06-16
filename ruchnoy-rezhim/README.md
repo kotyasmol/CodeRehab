@@ -123,6 +123,35 @@ Prerequisites:
 - npm
 - .NET SDK 8+
 
+### Docker
+
+The fastest full-stack startup is Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+Compose starts:
+
+- `backend` on `http://127.0.0.1:5088`
+- `frontend` on `http://127.0.0.1:5173`
+
+The backend image includes Node.js and the .NET SDK, so C# submissions run through the same `backend/runners/dotnet-runner` solution inside the container.
+
+Optional ports:
+
+```bash
+CODE_REHAB_FRONTEND_PORT=8080 CODE_REHAB_BACKEND_PORT=5089 docker compose up --build
+```
+
+### Local Development
+
 Install frontend dependencies:
 
 ```bash
@@ -165,6 +194,12 @@ dotnet restore CodeRehab.DotNetRunner.sln
 dotnet build CodeRehab.DotNetRunner.sln
 dotnet test CodeRehab.DotNetRunner.sln
 dotnet run --project src/CodeRehab.DotNetRunner/CodeRehab.DotNetRunner.csproj -- --request examples/smoke-request.json
+```
+
+Validate the Docker Compose file:
+
+```bash
+docker compose config
 ```
 
 ## How Checking Works
