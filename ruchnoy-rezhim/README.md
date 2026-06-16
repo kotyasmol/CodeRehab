@@ -1,0 +1,186 @@
+# Backend Rehab
+
+Backend Rehab is a hands-on training app for practicing real-world backend fixes through small async C# tasks, guided hints, and behavioral tests.
+
+It is built for developers who want to regain confidence writing code manually: no algorithm puzzles, no toy `if/for` drills, just everyday backend problems like retries, cancellation, idempotency, outbox, cache stampede, background workers, and sync-over-async bugs.
+
+## Screenshots
+
+### Home
+
+![Backend Rehab home desktop](frontend/web/.qa/home-desktop.png)
+
+### Mobile
+
+![Backend Rehab home mobile](frontend/web/.qa/home-mobile.png)
+
+## What It Does
+
+- Shows a catalog of practical backend async tasks.
+- Opens each task as a single editable C# file.
+- Provides a checklist and learning hints for the scenario.
+- Runs real behavioral tests against the submitted code.
+- Returns per-test `OK` / `FAIL` feedback instead of comparing two files.
+- Keeps frontend and backend responsibilities separate.
+
+## Current Task Set
+
+The app currently includes 10 backend tasks:
+
+- Idempotent payment webhook
+- Parallel order status refresh
+- Shipping quote timeouts
+- Forgotten `await` in registration
+- Async cache stampede
+- Background export status handling
+- Transactional outbox
+- Request cancellation leak
+- Sync-over-async inventory endpoint
+- Safe retry policy for CRM lead creation
+
+## Architecture
+
+```text
+ruchnoy-rezhim/
+  backend/
+    api/
+      server.mjs                  # HTTP API for lessons and submissions
+    services/
+      code-runner-service/
+        runner/
+          solutionRunner.mjs      # C# behavioral test runner
+      submission-service/
+      learning-content-service/
+      identity-service/
+      progress-service/
+      achievement-service/
+  frontend/
+    web/
+      src/
+        pages/
+        components/
+        data/                     # API client and shared frontend types
+  shared/
+    data/
+      lessons.json                # task catalog used by the backend
+```
+
+The frontend does not own task data or solution checking. It calls the backend API.
+
+The backend loads tasks from `shared/data/lessons.json`, accepts solution submissions, creates a temporary `.NET` console project, injects the user's C# code plus a task-specific test harness, runs `dotnet run`, and returns structured test results.
+
+## API
+
+Backend runs on `http://127.0.0.1:5088`.
+
+```text
+GET  /health
+GET  /api/lessons
+GET  /api/lessons/:id
+POST /api/submissions/check
+GET  /api/submissions/:id
+GET  /api/submissions?lessonId=:id
+```
+
+Example submission request:
+
+```json
+{
+  "lessonId": "webhook-idempotency",
+  "code": "public sealed class PaymentWebhookHandler { ... }"
+}
+```
+
+Example response:
+
+```json
+{
+  "id": "007d274d-8c9d-4d66-a819-674e8a501717",
+  "lessonId": "webhook-idempotency",
+  "status": "failed",
+  "result": {
+    "passed": 1,
+    "total": 2,
+    "tests": [
+      {
+        "name": "Duplicate webhook does not add credits again",
+        "passed": true,
+        "message": "OK"
+      }
+    ]
+  }
+}
+```
+
+## Local Setup
+
+Prerequisites:
+
+- Node.js
+- npm
+- .NET SDK 8+
+
+Install frontend dependencies:
+
+```bash
+cd frontend/web
+npm install
+```
+
+Start the backend API:
+
+```bash
+npm run dev:backend
+```
+
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+The Vite dev server proxies `/api` to `http://127.0.0.1:5088`.
+
+## Build
+
+```bash
+cd frontend/web
+npm run build
+```
+
+## How Checking Works
+
+The checker is behavioral:
+
+1. The user edits a single C# file in the browser.
+2. The frontend sends the code to `POST /api/submissions/check`.
+3. The backend validates the lesson id and code payload.
+4. The code runner creates a temporary `.NET` project.
+5. The runner combines:
+   - the submitted C# file,
+   - fake dependencies,
+   - task-specific tests,
+   - a small JSON result reporter.
+6. `dotnet run` executes with a timeout.
+7. The backend returns structured test results.
+
+This means a solution can pass with different implementation styles as long as the behavior is correct.
+
+## Notes
+
+This is a local training runner, not a production sandbox yet. It uses temporary folders and timeouts, but production deployment would still need stronger isolation, resource limits, and network restrictions.
+
+## Roadmap
+
+- Persistent submission history
+- User accounts and progress tracking
+- More backend task packs
+- Better runner isolation
+- Task authoring tools
+- CI checks for every lesson harness

@@ -1,0 +1,232 @@
+[
+  {
+    "id": "webhook-idempotency",
+    "title": "Идемпотентный webhook",
+    "topic": "ASP.NET Core",
+    "duration": "35 минут",
+    "level": "Backend async",
+    "description": "Исправь обработчик платежного webhook, который иногда дважды начисляет баланс.",
+    "accent": "olive",
+    "fileName": "PaymentWebhookHandler.cs",
+    "goal": "Сделай обработку webhook безопасной при повторной доставке события и параллельных запросах от платежного провайдера.",
+    "tasks": [
+      "Не начисляй баланс повторно для одного eventId.",
+      "Убери гонку между проверкой и записью обработанного события.",
+      "Сохрани понятный HTTP-ответ для повторного webhook.",
+      "Не держи сетевые вызовы внутри критической секции дольше необходимого."
+    ],
+    "hints": [
+      "Проверка AnyAsync перед SaveChanges не защищает от двух одновременных запросов.",
+      "Подумай о unique index по EventId и обработке DbUpdateException как нормального duplicate-сценария.",
+      "Если начисление баланса внешний вызов, сначала реши, где будет надежная граница идемпотентности."
+    ],
+    "starterCode": "using Microsoft.AspNetCore.Mvc;\n\npublic sealed class PaymentWebhookHandler\n{\n    private readonly BillingDbContext _db;\n    private readonly IUserBalanceClient _balances;\n\n    public PaymentWebhookHandler(BillingDbContext db, IUserBalanceClient balances)\n    {\n        _db = db;\n        _balances = balances;\n    }\n\n    public async Task<IActionResult> HandleAsync(PaymentWebhook payload, CancellationToken ct)\n    {\n        var alreadyHandled = await _db.ProcessedPaymentEvents\n            .AnyAsync(x => x.EventId == payload.EventId, ct);\n\n        if (alreadyHandled)\n            return new OkObjectResult(new { status = \"duplicate\" });\n\n        await _balances.AddCreditsAsync(payload.UserId, payload.Amount, ct);\n\n        _db.ProcessedPaymentEvents.Add(new ProcessedPaymentEvent\n        {\n            EventId = payload.EventId,\n            ReceivedAt = DateTimeOffset.UtcNow\n        });\n\n        await _db.SaveChangesAsync(ct);\n        return new OkObjectResult(new { status = \"processed\" });\n    }\n}"
+  },
+  {
+    "id": "parallel-order-refresh",
+    "title": "Параллельное обновление заказов",
+    "topic": "Task.WhenAll",
+    "duration": "30 минут",
+    "level": "Performance",
+    "description": "Ускорь синхронизацию заказов без перегруза внешнего API.",
+    "accent": "green",
+    "fileName": "OrderStatusRefreshJob.cs",
+    "goal": "Перепиши job так, чтобы статусы обновлялись конкурентно, но с ограничением параллелизма и корректной отменой.",
+    "tasks": [
+      "Не выполняй HTTP-запросы строго по одному.",
+      "Ограничь количество одновременных запросов к партнерскому API.",
+      "Не прерывай весь job из-за одного проблемного заказа.",
+      "Собери итог: сколько заказов обновлено, пропущено и завершилось ошибкой."
+    ],
+    "hints": [
+      "Task.WhenAll сам по себе легко устроит шторм запросов, если orders много.",
+      "SemaphoreSlim или Parallel.ForEachAsync помогут держать лимит конкурентности.",
+      "Ошибку одного заказа лучше превратить в результат обработки этого заказа, а не в падение всего job."
+    ],
+    "starterCode": "public sealed class OrderStatusRefreshJob\n{\n    private readonly IOrderRepository _orders;\n    private readonly IPartnerOrderClient _partner;\n    private readonly ILogger<OrderStatusRefreshJob> _logger;\n\n    public async Task<RefreshSummary> RunAsync(CancellationToken ct)\n    {\n        var orders = await _orders.GetOrdersWaitingForShipmentAsync(ct);\n        var updated = 0;\n\n        foreach (var order in orders)\n        {\n            var remoteStatus = await _partner.GetStatusAsync(order.PartnerOrderId, ct);\n\n            if (remoteStatus != order.Status)\n            {\n                order.Status = remoteStatus;\n                await _orders.SaveAsync(order, ct);\n                updated++;\n            }\n        }\n\n        return new RefreshSummary(updated, failed: 0, skipped: 0);\n    }\n}"
+  },
+  {
+    "id": "quote-timeouts",
+    "title": "Таймауты для цен доставки",
+    "topic": "HttpClient",
+    "duration": "25 минут",
+    "level": "Reliability",
+    "description": "Сделай агрегатор тарифов устойчивым к зависшему или упавшему провайдеру.",
+    "accent": "coral",
+    "fileName": "ShippingQuoteService.cs",
+    "goal": "Верни лучшие доступные тарифы даже если часть провайдеров отвечает медленно, падает или игнорирует отмену.",
+    "tasks": [
+      "Добавь общий дедлайн на расчет тарифов.",
+      "Не теряй успешные ответы из-за одного исключения.",
+      "Логируй провайдера, который не успел или упал.",
+      "Не возвращай пользователю пустой список, если хотя бы один тариф получен."
+    ],
+    "hints": [
+      "Для общего дедлайна удобно создать linked CancellationTokenSource с CancelAfter.",
+      "Оборачивай вызов каждого провайдера отдельно, чтобы один faulted task не съел остальные результаты.",
+      "В логе должны быть имя провайдера и причина: timeout, cancel или обычное исключение."
+    ],
+    "starterCode": "public sealed class ShippingQuoteService\n{\n    private readonly IReadOnlyList<IShippingProvider> _providers;\n    private readonly ILogger<ShippingQuoteService> _logger;\n\n    public async Task<IReadOnlyList<ShippingQuote>> GetQuotesAsync(\n        ShipmentRequest request,\n        CancellationToken ct)\n    {\n        var quotes = new List<ShippingQuote>();\n\n        foreach (var provider in _providers)\n        {\n            var quote = await provider.GetQuoteAsync(request, ct);\n            quotes.Add(quote);\n        }\n\n        return quotes\n            .OrderBy(x => x.Price)\n            .Take(3)\n            .ToList();\n    }\n}"
+  },
+  {
+    "id": "forgotten-await-email",
+    "title": "Потерянный await в регистрации",
+    "topic": "fire-and-forget",
+    "duration": "20 минут",
+    "level": "Bugfix",
+    "description": "Письмо подтверждения иногда не уходит, а ошибки не попадают в логи.",
+    "accent": "olive",
+    "fileName": "RegistrationService.cs",
+    "goal": "Исправь регистрацию пользователя так, чтобы асинхронная отправка письма была наблюдаемой и не оставляла систему в странном состоянии.",
+    "tasks": [
+      "Не запускай отправку письма без контроля результата.",
+      "Сохраняй пользователя и токен подтверждения атомарно.",
+      "Передай CancellationToken во все async-вызовы.",
+      "Верни клиенту понятную ошибку, если письмо критично для сценария."
+    ],
+    "hints": [
+      "Строка _email.SendConfirmationAsync(...) сейчас возвращает Task, который никто не ждёт.",
+      "Если письмо обязательно для завершения регистрации, await должен быть частью сценария и обработки ошибок.",
+      "Если письмо можно отправлять позже, вынеси его в очередь/outbox, а не оставляй fire-and-forget внутри request scope."
+    ],
+    "starterCode": "public sealed class RegistrationService\n{\n    private readonly AppDbContext _db;\n    private readonly IEmailSender _email;\n\n    public async Task<Guid> RegisterAsync(RegisterUserCommand command)\n    {\n        var user = new User(command.Email, command.DisplayName);\n        _db.Users.Add(user);\n\n        var token = EmailToken.CreateFor(user.Id);\n        _db.EmailTokens.Add(token);\n\n        await _db.SaveChangesAsync();\n\n        _email.SendConfirmationAsync(command.Email, token.Value);\n\n        return user.Id;\n    }\n}"
+  },
+  {
+    "id": "async-cache-stampede",
+    "title": "Cache stampede в профиле",
+    "topic": "MemoryCache",
+    "duration": "30 минут",
+    "level": "Concurrency",
+    "description": "Под высокой нагрузкой один и тот же профиль запрашивается из базы сотни раз.",
+    "accent": "green",
+    "fileName": "UserProfileCache.cs",
+    "goal": "Сделай async-кеш, который не устраивает лавину одинаковых запросов при промахе по ключу.",
+    "tasks": [
+      "Защити загрузку одного userId от параллельных дублей.",
+      "Не блокируй все остальные userId одной глобальной блокировкой.",
+      "Не кешируй неуспешный результат навсегда.",
+      "Освобождай ресурсы синхронизации после заполнения кеша."
+    ],
+    "hints": [
+      "Нужна синхронизация на уровне ключа profile:{userId}, а не один lock на весь кеш.",
+      "Lazy<Task<T>> или ConcurrentDictionary с SemaphoreSlim по ключу часто решают такую задачу.",
+      "После exception важно убрать незавершенную загрузку из служебного словаря, иначе ключ может застрять."
+    ],
+    "starterCode": "public sealed class UserProfileCache\n{\n    private readonly IMemoryCache _cache;\n    private readonly IUserRepository _users;\n\n    public async Task<UserProfile> GetAsync(Guid userId, CancellationToken ct)\n    {\n        var key = $\"profile:{userId}\";\n\n        if (_cache.TryGetValue<UserProfile>(key, out var cached))\n            return cached;\n\n        var profile = await _users.LoadProfileAsync(userId, ct);\n\n        _cache.Set(key, profile, TimeSpan.FromMinutes(10));\n        return profile;\n    }\n}"
+  },
+  {
+    "id": "background-export-status",
+    "title": "Статус фонового экспорта",
+    "topic": "BackgroundService",
+    "duration": "40 минут",
+    "level": "Product backend",
+    "description": "Экспорт отчета запускается в фоне, но пользователь не видит ошибку и вечный статус pending.",
+    "accent": "coral",
+    "fileName": "ReportExportWorker.cs",
+    "goal": "Доведи worker до поведения, которое можно поддерживать в продукте: статусы, ошибки, отмена и повторяемость.",
+    "tasks": [
+      "Переводи задачу в running, succeeded или failed.",
+      "Сохраняй текст ошибки без утечки секретов.",
+      "Учитывай CancellationToken при генерации и загрузке файла.",
+      "Не бери следующую задачу, пока текущая не зафиксировала финальный статус."
+    ],
+    "hints": [
+      "У worker должны быть явные переходы статуса до работы и в finally/catch после неё.",
+      "Сырые exception.ToString() могут утянуть connection string или токены; сохраняй безопасное сообщение.",
+      "При отмене приложения OperationCanceledException не всегда означает failed-задачу пользователя."
+    ],
+    "starterCode": "public sealed class ReportExportWorker : BackgroundService\n{\n    private readonly IExportQueue _queue;\n    private readonly IReportRenderer _renderer;\n    private readonly IFileStorage _storage;\n\n    protected override async Task ExecuteAsync(CancellationToken stoppingToken)\n    {\n        while (!stoppingToken.IsCancellationRequested)\n        {\n            var job = await _queue.DequeueAsync(stoppingToken);\n            var file = await _renderer.RenderAsync(job.ReportId, stoppingToken);\n            var url = await _storage.UploadAsync(file, stoppingToken);\n\n            job.DownloadUrl = url;\n            await _queue.SaveAsync(job, stoppingToken);\n        }\n    }\n}"
+  },
+  {
+    "id": "transaction-outbox",
+    "title": "Outbox для события заказа",
+    "topic": "Transactions",
+    "duration": "35 минут",
+    "level": "Distributed systems",
+    "description": "Заказ сохраняется в базе, но событие для склада иногда теряется.",
+    "accent": "olive",
+    "fileName": "CreateOrderHandler.cs",
+    "goal": "Исправь создание заказа так, чтобы доменное событие не терялось между SaveChanges и публикацией в брокер.",
+    "tasks": [
+      "Не публикуй событие напрямую после коммита без надежного следа в базе.",
+      "Сохрани заказ и outbox-сообщение в одной транзакции.",
+      "Сделай payload достаточным для последующей публикации.",
+      "Оставь обработчик идемпотентным для повторной команды с тем же requestId."
+    ],
+    "hints": [
+      "Проблемное окно находится между SaveChangesAsync и PublishAsync.",
+      "Outbox-сообщение должно жить в той же базе и транзакции, что и Order.",
+      "requestId можно использовать как естественный ключ команды, чтобы повтор не создал второй заказ."
+    ],
+    "starterCode": "public sealed class CreateOrderHandler\n{\n    private readonly ShopDbContext _db;\n    private readonly IMessageBus _bus;\n\n    public async Task<Guid> HandleAsync(CreateOrder command, CancellationToken ct)\n    {\n        var order = Order.Create(command.UserId, command.Items);\n        _db.Orders.Add(order);\n\n        await _db.SaveChangesAsync(ct);\n\n        await _bus.PublishAsync(new OrderCreated\n        {\n            OrderId = order.Id,\n            UserId = order.UserId\n        }, ct);\n\n        return order.Id;\n    }\n}"
+  },
+  {
+    "id": "cancellation-leak",
+    "title": "Отмена долгого поиска",
+    "topic": "CancellationToken",
+    "duration": "25 минут",
+    "level": "API hygiene",
+    "description": "Клиент закрывает вкладку, а сервер продолжает ходить в три сервиса и держать соединения.",
+    "accent": "green",
+    "fileName": "SearchController.cs",
+    "goal": "Прокинь отмену запроса через весь async pipeline и верни корректный результат при частичных ответах.",
+    "tasks": [
+      "Используй HttpContext.RequestAborted или входной CancellationToken.",
+      "Передай токен во все downstream-вызовы.",
+      "Не маскируй OperationCanceledException как ошибку сервера.",
+      "Оставь возможность вернуть частичный результат, если отмены не было, но один сервис упал."
+    ],
+    "hints": [
+      "CancellationToken.None здесь делает отмену клиента невидимой для зависимых сервисов.",
+      "Три независимых поиска можно запускать конкурентно, но каждый результат надо обработать отдельно.",
+      "OperationCanceledException при RequestAborted лучше не логировать как production error."
+    ],
+    "starterCode": "public sealed class SearchController : ControllerBase\n{\n    private readonly ICatalogSearch _catalog;\n    private readonly IReviewSearch _reviews;\n    private readonly IHelpCenterSearch _help;\n\n    [HttpGet(\"/search\")]\n    public async Task<IActionResult> Search(string query)\n    {\n        var products = await _catalog.FindAsync(query, CancellationToken.None);\n        var reviews = await _reviews.FindAsync(query, CancellationToken.None);\n        var articles = await _help.FindAsync(query, CancellationToken.None);\n\n        return Ok(new SearchResponse(products, reviews, articles));\n    }\n}"
+  },
+  {
+    "id": "async-deadlock",
+    "title": "Блокировка async-кода",
+    "topic": "sync-over-async",
+    "duration": "20 минут",
+    "level": "Production bug",
+    "description": "Endpoint иногда подвисает под нагрузкой из-за `.Result` внутри async-пути.",
+    "accent": "coral",
+    "fileName": "InventoryController.cs",
+    "goal": "Убери sync-over-async и сделай endpoint полностью асинхронным от контроллера до клиента склада.",
+    "tasks": [
+      "Не используй Result, Wait или GetAwaiter().GetResult().",
+      "Сохрани текущую форму ответа API.",
+      "Обработай таймаут склада как 503, а не как зависший запрос.",
+      "Прокинь CancellationToken до внешнего клиента."
+    ],
+    "hints": [
+      "Начни с замены сигнатуры action на async Task<ActionResult<InventoryDto>>.",
+      "Result блокирует поток и может ухудшать throughput даже там, где deadlock не воспроизводится локально.",
+      "Таймаут внешнего клиента стоит поймать отдельно и вернуть StatusCode(503), не меняя DTO успешного ответа."
+    ],
+    "starterCode": "public sealed class InventoryController : ControllerBase\n{\n    private readonly IWarehouseClient _warehouse;\n\n    [HttpGet(\"/inventory/{sku}\")]\n    public ActionResult<InventoryDto> Get(string sku)\n    {\n        var stock = _warehouse.GetStockAsync(sku, CancellationToken.None).Result;\n\n        if (stock is null)\n            return NotFound();\n\n        return Ok(new InventoryDto\n        {\n            Sku = sku,\n            Available = stock.Available,\n            Reserved = stock.Reserved\n        });\n    }\n}"
+  },
+  {
+    "id": "retry-policy",
+    "title": "Повторы без дублей",
+    "topic": "Retries",
+    "duration": "35 минут",
+    "level": "Integration",
+    "description": "Повтор запроса к CRM помогает при 502, но иногда создает две заявки.",
+    "accent": "olive",
+    "fileName": "CrmLeadClient.cs",
+    "goal": "Добавь безопасную retry-логику для временных ошибок внешней CRM без риска создать дубликаты лидов.",
+    "tasks": [
+      "Повторяй только временные ошибки и сетевые сбои.",
+      "Добавь идемпотентный ключ к запросу создания лида.",
+      "Используй backoff между попытками.",
+      "Не повторяй 400, 401, 403 и ошибки валидации."
+    ],
+    "hints": [
+      "POST без идемпотентного ключа опасно повторять: сервер мог создать лид, но ответ потерялся.",
+      "Для HttpRequestException и 5xx можно делать retry, для 4xx почти всегда нужно падать сразу.",
+      "Backoff не обязан быть сложным: даже 200ms, 500ms, 1s уже лучше мгновенной очереди повторов."
+    ],
+    "starterCode": "public sealed class CrmLeadClient\n{\n    private readonly HttpClient _http;\n\n    public async Task<string> CreateLeadAsync(NewLead lead, CancellationToken ct)\n    {\n        var response = await _http.PostAsJsonAsync(\"/api/leads\", lead, ct);\n\n        response.EnsureSuccessStatusCode();\n\n        var payload = await response.Content.ReadFromJsonAsync<CreateLeadResponse>(\n            cancellationToken: ct);\n\n        return payload!.LeadId;\n    }\n}"
+  }
+]

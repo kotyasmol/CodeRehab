@@ -1,0 +1,5 @@
+backend-api.*.log
+frontend/web/node_modules/
+frontend/web/dist/
+frontend/web/.npm-cache/
+frontend/web/*.log

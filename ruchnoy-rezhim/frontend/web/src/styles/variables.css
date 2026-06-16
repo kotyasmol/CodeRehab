@@ -1,0 +1,20 @@
+:root {
+  --color-pink: #f6b6c8;
+  --color-cream: #fff0c8;
+  --color-olive: #96a85f;
+  --color-black: #111111;
+  --color-coral: #f27665;
+  --color-green: #7bae52;
+  --color-code: #222222;
+  --color-white: #fff9ea;
+
+  --shadow-hard: 8px 8px 0 var(--color-black);
+  --shadow-small: 4px 4px 0 var(--color-black);
+
+  --radius-large: 32px;
+  --radius-medium: 22px;
+  --radius-small: 14px;
+
+  --border-heavy: 4px solid var(--color-black);
+  --border-medium: 3px solid var(--color-black);
+}
