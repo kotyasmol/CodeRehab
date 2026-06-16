@@ -1,0 +1,7 @@
+{
+  "taskId": "async-cache-stampede",
+  "language": "csharp",
+  "timeoutMs": 12000,
+  "debug": false,
+  "userCode": "public sealed class UserProfileCache { private readonly IMemoryCache _cache; private readonly IUserRepository _users; private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> Locks = new(); public async Task<UserProfile> GetAsync(Guid userId, CancellationToken ct) { var key = $\"profile:{userId}\"; if (_cache.TryGetValue<UserProfile>(key, out var cached)) return cached; var gate = Locks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1)); await gate.WaitAsync(ct); try { if (_cache.TryGetValue<UserProfile>(key, out cached)) return cached; var profile = await _users.LoadProfileAsync(userId, ct); _cache.Set(key, profile, TimeSpan.FromMinutes(10)); return profile; } finally { gate.Release(); Locks.TryRemove(userId, out _); } } }"
+}

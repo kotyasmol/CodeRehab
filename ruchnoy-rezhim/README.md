@@ -45,10 +45,13 @@ ruchnoy-rezhim/
   backend/
     api/
       server.mjs                  # HTTP API for lessons and submissions
+    runners/
+      dotnet-runner/
+        CodeRehab.DotNetRunner.sln # .NET C# solution runner
     services/
       code-runner-service/
         runner/
-          solutionRunner.mjs      # C# behavioral test runner
+          solutionRunner.mjs      # Node adapter that calls the .NET runner
       submission-service/
       learning-content-service/
       identity-service/
@@ -67,7 +70,7 @@ ruchnoy-rezhim/
 
 The frontend does not own task data or solution checking. It calls the backend API.
 
-The backend loads tasks from `shared/data/lessons.json`, accepts solution submissions, creates a temporary `.NET` console project, injects the user's C# code plus a task-specific test harness, runs `dotnet run`, and returns structured test results.
+The backend loads tasks from `shared/data/lessons.json` and accepts solution submissions. The Node API calls the separate .NET runner in `backend/runners/dotnet-runner`; that runner creates a temporary `.NET` console project, injects the user's C# code plus a task-specific test harness, runs restore/build/run, and returns structured test results.
 
 ## API
 
@@ -154,6 +157,16 @@ cd frontend/web
 npm run build
 ```
 
+Build and test the C# runner:
+
+```bash
+cd backend/runners/dotnet-runner
+dotnet restore CodeRehab.DotNetRunner.sln
+dotnet build CodeRehab.DotNetRunner.sln
+dotnet test CodeRehab.DotNetRunner.sln
+dotnet run --project src/CodeRehab.DotNetRunner/CodeRehab.DotNetRunner.csproj -- --request examples/smoke-request.json
+```
+
 ## How Checking Works
 
 The checker is behavioral:
@@ -161,14 +174,15 @@ The checker is behavioral:
 1. The user edits a single C# file in the browser.
 2. The frontend sends the code to `POST /api/submissions/check`.
 3. The backend validates the lesson id and code payload.
-4. The code runner creates a temporary `.NET` project.
-5. The runner combines:
+4. The backend starts the `.NET` runner as a separate process.
+5. The `.NET` runner creates a temporary `.NET` project.
+6. The runner combines:
    - the submitted C# file,
    - fake dependencies,
    - task-specific tests,
    - a small JSON result reporter.
-6. `dotnet run` executes with a timeout.
-7. The backend returns structured test results.
+7. `dotnet restore`, `dotnet build`, and `dotnet run` execute with timeouts.
+8. The backend returns structured test results while preserving the frontend API shape.
 
 This means a solution can pass with different implementation styles as long as the behavior is correct.
 

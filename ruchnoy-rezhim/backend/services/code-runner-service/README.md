@@ -1,7 +1,9 @@
 # Code Runner Service
 
-Локальный runner для проверки C#-решений.
+Локальный слой интеграции проверки C#-решений.
 
-Сейчас backend API вызывает `runner/solutionRunner.mjs`: runner создает временный `.NET` console-проект, добавляет пользовательский файл и тестовый harness для выбранного задания, запускает `dotnet run` с timeout и возвращает структурированные результаты тестов.
+`runner/solutionRunner.mjs` теперь является Node-адаптером: backend API вызывает его как раньше, а adapter запускает отдельный .NET runner из `backend/runners/dotnet-runner`.
 
-Это уже поведенческая проверка, а не сравнение файлов. Для production-режима потребуется отдельная изоляция процесса, лимиты ресурсов и запрет сети на уровне sandbox.
+.NET runner создает временный console-проект, добавляет пользовательский `UserSolution.cs`, общие `.cs` шаблоны и task-specific harness, выполняет `dotnet restore`, `dotnet build`, `dotnet run` с timeout и возвращает структурированный JSON. Adapter преобразует этот ответ в прежний frontend-формат `{ passed, total, tests }`.
+
+Это поведенческая проверка, а не сравнение файлов. Для production-режима потребуется отдельная изоляция процесса, лимиты ресурсов и запрет сети на уровне sandbox.

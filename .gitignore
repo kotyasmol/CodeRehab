@@ -3,3 +3,8 @@
 node_modules/
 dist/
 .npm-cache/
+bin/
+obj/
+TestResults/
+*.user
+*.suo
